@@ -63,9 +63,10 @@ rule leafcutter_ds:
         extra_params = lambda wildcards: samples.at[wildcards.AnalysisName, "DsExtraParams"] 
     log:
         "logs/leafcutter_ds/{AnalysisName}.log"
-    # conda:
-        # "envs/leafcutter.yml"
+    conda:
+        "envs/leafcutter.yml"
     shell:
         """
-        leafcutter_ds.R -p {threads} -o {params.outputprefix} {params.extra_params} {input.JuncCountTable} {input.groupfile} &> {log}
+        conda activate leafcutter
+	leafcutter_ds.R -p {threads} -o {params.outputprefix} {params.extra_params} {input.JuncCountTable} {input.groupfile} &> {log}
         """

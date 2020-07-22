@@ -1,0 +1,129 @@
+---
+title: "SF3B1 project _coding start"
+author: "Shane Warland"
+date: "7/14/2020"
+output: html_document
+---
+```{r}
+#Access necessary packages
+library(data.table)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(ggrepel)
+library(tidyverse)
+library(gplots)
+library(knitr)
+library("RColorBrewer")
+```
+
+```{bash}
+
+#comand for creating numerator and denominator files
+#Specify the perind.counts.gz file from leafcutter clustering step
+zcat /home/sfwarland/leafcutter_ds_pipeline/code/clustering/SF3B1K700E_v_WT/leafcutter_perind.counts.gz | perl -lne 'if ($.==1) {print} else {$_ =~ s/\d+\///g; print}' > leafcutter_perind.counts.numers
+zcat /home/sfwarland/leafcutter_ds_pipeline/code/clustering/SF3B1K700E_v_WT/leafcutter_perind.counts.gz  | perl -lne 'if ($.==1) {print} else {$_ =~ s/\/\d+//g; print}' > leafcutter_perind.counts.denoms
+```
+
+
+```{r}
+#Assigning Number and Denominator Count table
+
+Numers <- '/project2/yangili1/shanewarland/SF3B1_project/SF3B1_cluster/SF3B1_clusterK700EvsWT_MDS/leafcutter_perind.counts.denoms'
+Denoms <- '/project2/yangili1/shanewarland/SF3B1_project/SF3B1_cluster/SF3B1_clusterK700EvsWT_MDS/leafcutter_perind.counts.numers'
+
+#create the count tables
+NumeratorCountTable <- fread(paste0(Numers), sep=" ", header=T, data.table=F)
+DenominatorCountTable <- fread(paste0(Denoms), sep=" ", header=T, data.table=F)
+
+#Create PSI_table and clean up
+PSI_Table <- NumeratorCountTable[-1]/DenominatorCountTable[-1]
+head(PSI_Table)
+row.names(PSI_Table) <- gsub(":clu_.+", "", NumeratorCountTable$chrom)
+PSI_Table[is.na(PSI_Table)] <- 0
+```
+Now lets filter the data based on significant introns identified in Darman et al.
+```{r}
+#Lets try filtering it by significant introns from Darman
+Darman <- read_excel("/project2/yangili1/shanewarland/SF3B1_project/Darmanhg38.xls", col_names=T)
+
+#used mutate to add 1 to both start and stop columns in Darman in order to clean up mapping 
+Darman1 <- Darman %>% mutate(Start=Start+1,End=End+1) 
+Darman1 %>% head()
+
+
+#combine Darman first 3 columns so it matches
+Darman.df <- unite(Darman1, Chrom, c("Chromosome","Start"), sep = ":", remove = TRUE, na.rm = FALSE)
+Darmansorted.df <-  unite(Darman.df, Chrom, c("Chrom","End"), sep = ":", remove = TRUE, na.rm = FALSE)
+  #paste(Darman$Chromosome, ":", Darman$Start, ":", Darman$End)
+
+
+#Make rowname actual column so I can filter it
+PSI_TableRowNamed <- cbind(Chrom = rownames(PSI_Table), PSI_Table)
+#PSI_TableRowNamed <- PSI_TableRowNamed[,-1]
+head(PSI_TableRowNamed)
+#dat2 <- data_qual[data_qual$ID %in% dat$ID, ]
+DarmanFiltered.df <- PSI_TableRowNamed[PSI_TableRowNamed$Chrom %in% Darmansorted.df$Chrom,]
+
+dim(DarmanFiltered.df)
+head(DarmanFiltered.df)
+DarmanFinished <- DarmanFiltered.df %>% select(-Chrom)%>% as.matrix()
+```
+
+Run the PCA
+```{r}
+#Running PC analysis
+library(tidyverse)
+PCResults <- (DarmanFinished) %>%
+  #head(100) %>%
+  t() %>%
+  prcomp(center=T, scale=T)
+
+PCResults.df <- as.data.frame(PCResults$x[,1:10]) %>% rownames_to_column()
+
+
+
+```
+
+I have the PCR results but I want to add data from the group file in order to be able to cluster my PC plot by group
+This code processes it and adds it
+```{r}
+#getting rid of ID from group file 
+groupfile <- "/home/sfwarland/leafcutter_ds_pipeline/data/groupfiles/sf3b1_k700e_wt.groups.tsv"
+groupfiletable <- read.delim(groupfile, header = F, sep = "\t")
+head(groupfiletable)
+
+groupNoID <- data.frame(lapply(groupfiletable, function(x) {gsub("id", "", x)}))
+
+colnames(groupNoID) <- c("rowname", "mutation")
+head(groupNoID,20)
+
+
+#merging group file
+#Using new PCResults
+combined.data <- merge(x = PCResults.df, y = groupNoID, by = c("rowname"), all = TRUE)
+head(combined.data)
+```
+
+Now visualize the PCA
+```{r}
+#PCA graph
+PCResultsNoS2.df <- PCResults.df[-c(5,6,11,12),]
+ggplot(combined.data) +
+  geom_point(aes(x=PC1, y=PC2, color= mutation))
+```
+
+
+```{r}
+#This was simply used to create bed files to trouble shoot
+Darman %>% select("Chromosome","Start","End") %>% 
+  write.table("/project2/yangili1/shanewarland/SF3B1_project/DarmanBed.bed",col.names =F, sep = "\t", row.names=F, quote=F)
+
+PSI_Table %>% rownames_to_column() %>% select(rowname) %>% 
+  separate(rowname, c("Chromosome","Start","End"), sep=":")%>% write.table("/project2/yangili1/shanewarland/SF3B1_project/PSI_BED.bed",col.names =F, sep = "\t", row.names=F, quote=F)
+
+"chr6:10723241:10724556" %in% PSI_TableRowNamed$Chrom
+arrange(Darmansorted.df, `FDR q-value`) %>% head()
+```
+
