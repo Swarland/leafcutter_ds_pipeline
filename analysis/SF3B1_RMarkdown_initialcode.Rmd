@@ -25,9 +25,8 @@ zcat /home/sfwarland/leafcutter_ds_pipeline/code/clustering/SF3B1K700E_v_WT/leaf
 zcat /home/sfwarland/leafcutter_ds_pipeline/code/clustering/SF3B1K700E_v_WT/leafcutter_perind.counts.gz  | perl -lne 'if ($.==1) {print} else {$_ =~ s/\/\d+//g; print}' > leafcutter_perind.counts.denoms
 ```
 
-```{bash}
-zcat ../output/CountTables/SF3B1K700E_v_WT.numers.gz | head -n 1 
-```
+
+
 
 ```{r}
 #Assigning Number and Denominator Count table
