@@ -22,6 +22,8 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 
 <link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
 <!-- Add a small amount of space between sections. -->
@@ -302,7 +304,13 @@ $(document).ready(function () {
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
-        
+        <li>
+  <a href="https://github.com/swarland/leafcutter_ds_pipeline">
+    <span class="fa fa-github"></span>
+     
+    Source code
+  </a>
+</li>
       </ul>
     </div><!--/.nav-collapse -->
   </div><!--/.container -->
@@ -319,7 +327,7 @@ $(document).ready(function () {
 
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
-<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span>
 </button>
 </p>
 <div id="workflowr-report" class="collapse">
@@ -328,7 +336,7 @@ $(document).ready(function () {
 <a data-toggle="tab" href="#summary">Summary</a>
 </li>
 <li>
-<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> </a>
 </li>
 <li>
 <a data-toggle="tab" href="#versions">Past versions</a>
@@ -337,10 +345,10 @@ $(document).ready(function () {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2020-07-23
+<strong>Last updated:</strong> 2020-07-27
 </p>
 <p>
-<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 1 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
 </p>
 <p>
 <strong>Knit directory:</strong> <code>leafcutter_ds_pipeline/analysis/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
@@ -356,28 +364,28 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges"> <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted changes </a>
 </p>
 </div>
-<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div id="strongRMarkdownfilestronguncommittedchanges" class="panel-collapse collapse">
 <div class="panel-body">
-<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+<p>The R Markdown file has unstaged changes. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
 </div>
 </div>
 </div>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomSwarlandleafcutterdspipelinetree1e80761c15d80bf060b6ff2a14069a1a0b8f6085targetblank1e80761a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/Swarland/leafcutter_ds_pipeline/tree/1e80761c15d80bf060b6ff2a14069a1a0b8f6085" target="_blank">1e80761</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomswarlandleafcutterdspipelinetree2b30ef711755fb957afc71db98ec6b853924bf08targetblank2b30ef7a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/swarland/leafcutter_ds_pipeline/tree/2b30ef711755fb957afc71db98ec6b853924bf08" target="_blank">2b30ef7</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomSwarlandleafcutterdspipelinetree1e80761c15d80bf060b6ff2a14069a1a0b8f6085targetblank1e80761a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomswarlandleafcutterdspipelinetree2b30ef711755fb957afc71db98ec6b853924bf08targetblank2b30ef7a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/Swarland/leafcutter_ds_pipeline/tree/1e80761c15d80bf060b6ff2a14069a1a0b8f6085" target="_blank">1e80761</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/swarland/leafcutter_ds_pipeline/tree/2b30ef711755fb957afc71db98ec6b853924bf08" target="_blank">2b30ef7</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -385,16 +393,40 @@ Note that you need to be careful to ensure that all relevant files for the analy
 <pre><code>
 Ignored files:
     Ignored:    code/.snakemake/
+    Ignored:    code/Session.vim
     Ignored:    code/clustering/
     Ignored:    code/logs/
 
 Untracked files:
+    Untracked:  analysis/Comparing_sig_genes_K700E_v_G742D.Rmd
     Untracked:  analysis/Darmanhg38.xls
-    Untracked:  analysis/SF3B1_RMarkdown_initialcode-copy2.Rmd
+    Untracked:  analysis/leafcutter_perind.counts.denoms
+    Untracked:  analysis/leafcutter_perind.counts.numers
+    Untracked:  data/groupfiles/sf3b1_g742d_wt.groups.tsv
+    Untracked:  data/groupfiles/sf3b1_k700e_g742d.groups.tsv
+    Untracked:  data/groupfiles/sf3b1_mds_v_cll.groups.tsv
+    Untracked:  data/groupfiles/sf3b1_mut_dis.groups.tsv
+    Untracked:  data/juncfiles/sf3b1_g742d_wt.juncfile.tsv
+    Untracked:  data/juncfiles/sf3b1_k700e_g742d.juncfile.tsv
+    Untracked:  data/juncfiles/sf3b1_mds_v_cll.juncfile.tsv
+    Untracked:  data/juncfiles/sf3b1_mut_dis.juncfile.tsv
+    Untracked:  output/CountTables/SF3B1G742D_v_WT.denoms.gz
+    Untracked:  output/CountTables/SF3B1G742D_v_WT.numers.gz
+    Untracked:  output/CountTables/SF3B1K700E_v_G742D.denoms.gz
+    Untracked:  output/CountTables/SF3B1K700E_v_G742D.numers.gz
+    Untracked:  output/CountTables/SF3B1MDS_v_CLL.denoms.gz
+    Untracked:  output/CountTables/SF3B1MDS_v_CLL.numers.gz
+    Untracked:  output/CountTables/SF3B1MUT_v_Dis.denoms.gz
+    Untracked:  output/CountTables/SF3B1MUT_v_Dis.numers.gz
     Untracked:  output/DifferentialSplicing/
 
 Unstaged changes:
+    Modified:   analysis/SF3B1_RMarkdown_initialcode.Rmd
+    Modified:   analysis/index.Rmd
     Modified:   code/Snakefile
+    Modified:   code/samples.tsv
+    Modified:   output/CountTables/SF3B1K700E_v_WT.denoms.gz
+    Modified:   output/CountTables/SF3B1K700E_v_WT.numers.gz
 
 </code></pre>
 <p>
@@ -435,10 +467,27 @@ Message
 <tbody>
 <tr>
 <td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/swarland/leafcutter_ds_pipeline/2b30ef711755fb957afc71db98ec6b853924bf08/docs/index.html" target="_blank">2b30ef7</a>
+</td>
+<td>
+Shane Warland
+</td>
+<td>
+2020-07-27
+</td>
+<td>
+First analysis code
+</td>
+</tr>
+<tr>
+<td>
 Rmd
 </td>
 <td>
-<a href="https://github.com/Swarland/leafcutter_ds_pipeline/blob/8ab3b4da81572c8622d96a083a8eb09192e72234/analysis/index.Rmd" target="_blank">8ab3b4d</a>
+<a href="https://github.com/swarland/leafcutter_ds_pipeline/blob/8ab3b4da81572c8622d96a083a8eb09192e72234/analysis/index.Rmd" target="_blank">8ab3b4d</a>
 </td>
 <td>
 Benjmain Fair
@@ -457,7 +506,7 @@ Initial commit
 </div>
 </div>
 </div>
-<p>Welcome to my research website.</p>
+<p>Welcome to my research website. This is for a project investigating SF3B1. <a href="SF3B1_RMarkdown_initialcode.html">click here</a></p>
 
 
 <!-- Adjust MathJax settings so that all math formulae are shown using

@@ -1,0 +1,141 @@
+---
+title: "Differential gene expression analysis"
+author: "Shane Warland"
+date: "7/24/2020"
+output: html_document
+---
+
+```{r}
+#Access necessary packages
+library(data.table)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(ggrepel)
+library(tidyverse)
+library(gplots)
+library(knitr)
+library("RColorBrewer")
+
+```
+
+
+
+```{r}
+#Specify which files for significant genoe analysis, I will filter based on Darman and then compare (K700E v WT in MDS and G742D v WT in CLL)
+
+Denoms1 <- '../output/CountTables/SF3B1G742D_v_WT.numers.gz'
+Numers1 <- '../output/CountTables/SF3B1G742D_v_WT.denoms.gz'
+
+Denoms2 <- '../output/CountTables/SF3B1K700E_v_WT.numers.gz'
+Numers2 <- '../output/CountTables/SF3B1K700E_v_WT.denoms.gz'
+
+#create the count tables
+#If .gz add "gunzip -c " to paste0 function
+NumeratorCountTable1 <- fread(paste0(Numers1), sep=" ", header=F, data.table=F)
+DenominatorCountTable1 <- fread(paste0(Denoms1), sep=" ", header=F, data.table=F)
+
+NumeratorCountTable2 <- fread(paste0(Numers2), sep=" ", header=F, data.table=F)
+DenominatorCountTable2 <- fread(paste0(Denoms2), sep=" ", header=F, data.table=F)
+#head(NumeratorCountTable)
+#Create PSI_table and clean up
+PSI_Table1 <- NumeratorCountTable1[-1]/DenominatorCountTable1[-1]
+PSI_Table2 <- NumeratorCountTable2[-1]/DenominatorCountTable2[-1]
+nrow(PSI_Table1)
+colnames(NumeratorCountTable1)[1] <- "chrom"
+colnames(NumeratorCountTable2)[1] <- "chrom"
+
+row.names(PSI_Table1) <- gsub(":clu_.+", "", NumeratorCountTable1$chrom)
+PSI_Table1[is.na(PSI_Table1)] <- 0
+
+row.names(PSI_Table2) <- gsub(":clu_.+", "", NumeratorCountTable2$chrom)
+PSI_Table2[is.na(PSI_Table2)] <- 0
+
+#Have to add column names for propper sorting later
+
+col_names<-fread(Numers1, sep="", quote=F)[1,] %>% colnames()
+colnamessplit1<- unlist(str_split(col_names," "))
+
+col_names<-fread(Numers2, sep="", quote=F)[1,] %>% colnames()
+colnamessplit2<- unlist(str_split(col_names," "))
+
+data.table(colnamessplit)
+#head(colnamessplit)
+colnames(PSI_Table1)<-colnamessplit1
+colnames(PSI_Table2)<-colnamessplit2
+head(PSI_Table1)
+head(PSI_Table2)
+#Make new variable to see unfiltered
+UnfilteredDarman1 <- PSI_Table1
+UnfilteredDarman2 <- PSI_Table2
+#head(UnfilteredDarman)
+#head(PSI_Table)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+#Need my trusty Darman for the next step
+#Lets try filtering it by significant introns from Darman
+Darman <- read_excel("Darmanhg38.xls", col_names=T)
+
+#used mutate to add 1 to both start and stop columns in Darman in order to clean up mapping 
+Darman1 <- Darman %>% mutate(Start=Start+1,End=End+1) 
+#Darman1 %>% head()
+
+
+#combine Darman first 3 columns so it matches
+Darman.df <- unite(Darman1, Chrom, c("Chromosome","Start"), sep = ":", remove = TRUE, na.rm = FALSE)
+#head(Darman.df)
+Darmansorted.df <-  unite(Darman.df, Chrom, c("Chrom","End"), sep = ":", remove = TRUE, na.rm = FALSE)
+  #paste(Darman$Chromosome, ":", Darman$Start, ":", Darman$End)
+#head(Darmansorted.df)
+
+#Make rowname actual column so I can filter it
+PSI_TableRowNamed1 <- cbind(Chrom = rownames(PSI_Table1), PSI_Table1)
+PSI_TableRowNamed2 <- cbind(Chrom = rownames(PSI_Table2), PSI_Table2)
+#PSI_TableRowNamed <- PSI_TableRowNamed[,-1]
+head(PSI_TableRowNamed1)
+#dat2 <- data_qual[data_qual$ID %in% dat$ID, ]
+
+#Lets try new thing, lets filter Darman by sig from samples!!!
+DarmanFiltered1.df <- Darmansorted.df[Darmansorted.df$Chrom %in% PSI_TableRowNamed1$Chrom,]
+DarmanFiltered2.df <- Darmansorted.df[Darmansorted.df$Chrom %in% PSI_TableRowNamed2$Chrom,]
+#head(DarmanFiltered1.df)
+#head(DarmanFiltered2.df)
+#dim(DarmanFiltered1.df)
+
+MostSigGenes1 <- arrange(DarmanFiltered1.df, `FDR q-value`) %>% head(200)
+MostSigGenes2 <- arrange(DarmanFiltered2.df, `FDR q-value`) %>% head(200)
+#dim (MostSigGenes2)
+#dim(MostSigGenes1)
+
+MostSigGenes1 <- as.data.frame(MostSigGenes1)
+MostSigGenes2 <- as.data.frame(MostSigGenes2)
+#head(MostSigGenes1)
+
+
+#head(MostSigGenes2)
+G742DExclu <- setdiff(MostSigGenes1$`Gene Symbols`,MostSigGenes2$`Gene Symbols`)
+K700EExclu <- setdiff(MostSigGenes2$`Gene Symbols`,MostSigGenes1$`Gene Symbols`)
+
+#Results
+head(G742DExclu,20)
+head(K700EExclu,20)
+
+```
+
+
+
+
+```{r}
+
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

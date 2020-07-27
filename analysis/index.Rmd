@@ -9,3 +9,5 @@ editor_options:
 ---
 
 Welcome to my research website.
+This is for a project investigating SF3B1.
+[click here](SF3B1_RMarkdown_initialcode.html)
