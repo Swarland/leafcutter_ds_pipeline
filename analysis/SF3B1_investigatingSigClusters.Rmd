@@ -1,0 +1,209 @@
+---
+title: "SF3B1Mut_v_Dis_analysis"
+author: "Shane Warland"
+date: "7/29/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(dplyr)
+library(VennDiagram)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+sigg742d <- read.table("../output/DifferentialSplicing/SF3B1G742D_v_WT/SF3B1G742D_v_WTClus/leafcutter_ds_cluster_significance.txt", sep='\t', header=T)
+sigk700e <- read.table("../output/DifferentialSplicing/SF3B1K700E_v_WT/SF3B1K700E_v_WTClus/leafcutter_ds_cluster_significance.txt", sep='\t', header=T)
+
+head(sigg742d)
+nrow(sigg742d)
+
+#head(sigk700e) %>% kable()
+#head(sigg742d) %>% kable()
+#names(sigg742d)
+SigG742D <- sigg742d %>% filter(p.adjust <0.05)
+#head(SigG742D)
+nrow(SigG742D)
+SigK700E <- sigk700e %>% filter(p.adjust <0.05)
+#head(SigK700E)
+#nrow(SigG742D)
+
+G742dUnique <- setdiff(SigG742D,SigK700E)
+K700EUnique <- setdiff(SigK700E,SigG742D)
+Intersect <- merge(SigG742D,SigK700E, by="cluster")
+nrow(G742dUnique)
+
+nrow(K700EUnique)
+nrow(Intersect)
+
+grid.newpage()
+draw.pairwise.venn(675, 6249, 140, category = c("G742D", "K700E"), lty = rep("blank", 
+    2), fill = c("light blue", "pink"), alpha = rep(0.5, 2), cat.pos = c(0, 
+    0), cat.dist = rep(0.025, 2))
+```
+
+```{r}
+#Gene ontology for G742D
+head(G742dUnique)
+names(G742dUnique)
+
+#I want to sort G742D based on effect sizes to see what is mapped to Darman
+
+#Lets try filtering it by significant introns from Darman
+Darman <- read_excel("Darmanhg38.xls", col_names=T)
+
+#used mutate to add 1 to both start and stop columns in Darman in order to clean up mapping 
+#Filter based on if CLL sig is true
+Darman1 <- Darman %>% mutate(Start=Start+1,End=End+1) 
+Darman1 %>% head()
+Darman2 <- Darman1 %>% filter(Darman1$`Significant in CLL`=="True")
+head(Darman2)
+
+#combine Darman first 3 columns so it matches
+Darman.df <- unite(Darman2, Chrom, c("Chromosome","Start"), sep = ":", remove = TRUE, na.rm = FALSE)
+#head(Darman.df)
+Darmansorted.df <-  unite(Darman.df, Chrom, c("Chrom","End"), sep = ":", remove = TRUE, na.rm = FALSE)
+  #paste(Darman$Chromosome, ":", Darman$Start, ":", Darman$End)
+head(Darmansorted.df)
+
+
+
+
+```
+
+
+
+
+```{r}
+effect_sizes <- read.table("../output/DifferentialSplicing/SF3B1G742D_v_WT/SF3B1G742D_v_WTClus/leafcutter_ds_effect_sizes.txt", sep='\t', header=T)
+
+head(effect_sizes) %>% kable()
+head(effect_sizes,100)
+names(effect_sizes)
+
+effect_sizes$cluster1 <- gsub("chr.+:clu_", "", effect_sizes$intron)
+head(effect_sizes)
+
+#
+```
+
+
+
+```{r}
+#Lets create cluster1 column in G742DUnique so I can filter
+
+head(G742dUnique)
+G742dUnique$cluster1 <- gsub(".+:clu_", "", G742dUnique$cluster) 
+head(G742dUnique)
+
+FilteredG742 <- effect_sizes[effect_sizes$cluster1 %in% G742dUnique$cluster1,]
+FilteredG742$intron <- gsub(":clu_.+", "", FilteredG742$intron)
+head(FilteredG742)  
+
+FullFilG742D <- Darmansorted.df[Darmansorted.df$Chrom %in% FilteredG742$intron,]
+head(FullFilG742D)
+nrow(FullFilG742D)
+arrange(FullFilG742D, `FDR q-value`) %>% head(7)
+```
+
+```{r}
+#Filter and find pvalues from Darman in the leafcutter
+#add another column to G742dUnique to allow for filtering
+head(G742dUnique)
+head(effect_sizes)
+G742DEnriched <- G742dUnique
+G742DEnriched <- merge(G742DEnriched, effect_sizes, by= c("cluster1"))
+head(G742DEnriched)
+
+G742DEnriched$intron <- gsub(":clu_.+", "", G742DEnriched$intron)
+PfilG742D <- G742DEnriched[G742DEnriched$intron %in% Darmansorted.df$Chrom,]
+head(PfilG742D)
+nrow(PfilG742D)
+arrange(PfilG742D, `p`) %>% head(50)
+hist(PfilG742D$p, breaks=15)
+```
+
+```{r}
+#Make p-value scatterplot between contrasts
+head(G742dUnique)
+head(K700EUnique)
+plot(G742dUnique$p, K700EUnique$p)
+K700EShorter <- K700EUnique[K700EUnique$cluster %in% G742dUnique$cluster,]
+G742DShorter <- G742dUnique[G742dUnique$cluster %in% K700EUnique$cluster,]
+head(K700EShorter)
+nrow(K700EShorter)
+nrow(K700EUnique)
+nrow(G742dUnique)
+plot(K700EShorter$p, G742DShorter$p, abline())
+cor(K700EShorter$p, G742DShorter$p)
+
+
+nrow(sigg742d)
+nrow(sigk700e)
+plot(log(sigg742d$p),log(sigk700e$p), col=rgb(red=0.2, green=0.2, blue=1.0, alpha=0.2))
+cor(log(sigg742d$p),log(sigk700e$p),use="complete.obs")
+```
+
+
+
+```{r}
+effect_sizes <- effect_sizes %>%
+  mutate(logef=-1* logef,
+         deltapsi=-1*deltapsi)
+head(effect_sizes)
+```
+
+
+```{r}
+
+effect_sizes %>%
+  mutate(Cluster=sub(".+?:(clu_.+?_.+?)","\\1",intron)) %>%
+  group_by(Cluster) %>%
+  tally() %>%
+  ggplot(aes(x=n)) +
+  geom_bar(breaks=40) +
+  xlab("Num introns per cluster") +
+  ylab("Freq") +
+  theme_bw()
+```
+```{r}
+hist(sigg742d$p)
+hist(SigG742D$p)
+hist(sigk700e$p)
+hist(SigK700E$p)
+
+hist(sigg742d$p)
+hist(sigg742d$p.adjust)
+
+```
+
+
+```{r}
+table(sig$p.adjust<0.1) %>% kable()
+```
+
+```{r}
+# merge significance and cluster tables
+leafcutter.merged <- effect_sizes %>%
+  mutate(cluster=gsub("(.+?:).+?:.+?:(clu.+?)", "\\1\\2", intron, perl=T)) %>%
+  mutate(junc_id=gsub("(.+?:.+?:.+?):clu.+", "\\1", intron, perl=T)) %>%
+  left_join(sig, by="cluster")
+
+# volcano plot of cluster-pvalues and largest within-cluster-delta-psi
+leafcutter.merged %>%
+  mutate(abs.deltapsi = abs(deltapsi)) %>%
+  group_by(cluster) %>% 
+  top_n(n=1, abs.deltapsi) %>%
+  mutate(sig=p.adjust<0.05) %>%
+  ggplot(aes(x=deltapsi, y=-log10(p), color=sig)) +
+    geom_point(alpha=0.05) +
+    theme_bw()
+```
+

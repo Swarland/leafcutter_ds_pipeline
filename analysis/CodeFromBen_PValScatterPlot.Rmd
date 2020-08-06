@@ -1,0 +1,114 @@
+---
+title: "Plot scatterplot of P values colored by Darman"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,  warning = F, message = F)
+```
+
+## Introduction
+
+Shane has done two differential splicing contrasts:
+
+1. SF3B1_WT (CLL) vs SF3B1-G742D (CLL)
+2. SF3B1_WT (MDS) vs SF3B1-K700E (MDS)
+
+
+Let's make a scatter plot to compare genome wide P values by cluster for the two contrasts. let's also color the points by whether the clusters contain an intron that was significantly differently spliced in Darman et al.
+
+
+First, load libraries:
+```{r}
+
+library(readxl)
+library(tidyverse)
+library(knitr)
+
+```
+
+Now read in data and inspect it a bit:
+
+```{r}
+#Read in data
+sigg742d <- read.table("../output/DifferentialSplicing/SF3B1G742D_v_WT/SF3B1G742D_v_WTClus/leafcutter_ds_cluster_significance.txt", sep='\t', header=T)
+sigk700e <- read.table("../output/DifferentialSplicing/SF3B1K700E_v_WT/SF3B1K700E_v_WTClus/leafcutter_ds_cluster_significance.txt", sep='\t', header=T)
+effect_sizesg742d <- read.table("../output/DifferentialSplicing/SF3B1G742D_v_WT/SF3B1G742D_v_WTClus/leafcutter_ds_effect_sizes.txt", sep='\t', header=T)
+effect_sizesk700e <- read.table("../output/DifferentialSplicing/SF3B1K700E_v_WT/SF3B1K700E_v_WTClus/leafcutter_ds_effect_sizes.txt", sep='\t', header=T)
+
+Darman <- read_excel("Darmanhg38.xls", col_names=T)
+
+#inpect it
+head(sigg742d) %>% kable()
+
+head(effect_sizesg742d) %>% kable()
+
+head(Darman) %>% kable()
+
+```
+
+Ok now let's start with making the scatter plot of P-values, without bothering to color by Darman et al.
+
+```{r}
+#scatter plot
+inner_join(sigk700e, sigg742d, by="cluster", suffix=c(".K700E", ".G742D")) %>%
+  ggplot(aes(x=-log10(p.K700E), y=-log10(p.G742D))) +
+  geom_point(alpha=0.03) +
+  theme_bw()
+
+#sometimes the geom_hex layer is nice to plot dense scatter plots
+inner_join(sigk700e, sigg742d, by="cluster", suffix=c(".K700E", ".G742D")) %>%
+  ggplot(aes(x=-log10(p.K700E), y=-log10(p.G742D))) +
+  geom_hex(bins=100) +
+  scale_fill_viridis_c() +
+  theme_bw()
+```
+
+Ok... that's just like what shane already showed me. not much correlation. or a bit less than I expected I should say.
+
+Now let's color the clusters with Darman significant introns red.
+
+
+```{r}
+#First grab the Darman signifcant introns, and use a naming convention that matches the leafcutter naming conventions:
+
+DarmanSigIntrons.vector <- Darman %>%
+  mutate(Start=Start+1,End=End+1) %>%
+  filter(`Significant in CLL`=="True") %>%
+  unite(Chrom, c("Chromosome","Start", "End"), sep = ":", remove = TRUE, na.rm = FALSE) %>% pull(Chrom)
+
+head(DarmanSigIntrons.vector)
+```
+
+Ok, now it's a little bit tricky to match up to the leafcutter data because the P values for each cluster, not each intron. So now that I have all the significant introns from Darman, we need to find the leafcutter clusters that contain those introns, and color those red.
+
+```{r}
+#First find the clusters that contain the introns in the Darman list
+#The leafcutter effect_sizes table has a row for each intron, and also names the cluster for each intron. So we can use that.
+
+DarmanSignificantClusters <- effect_sizesg742d %>%
+  separate(intron, into=c("chromosome", "start", "stop", "cluster"), sep=":") %>%
+  unite(intron.name, chromosome, start, stop, sep=":") %>%
+  filter(intron.name %in% DarmanSigIntrons.vector) %>%
+  pull(cluster)
+
+head(DarmanSignificantClusters)
+
+```
+
+Ok, now let's plot...
+
+```{r}
+inner_join(sigk700e, sigg742d, by="cluster", suffix=c(".K700E", ".G742D")) %>%
+  separate(cluster, into=c("cluster_pos", "cluster_name"), sep=":") %>%
+  mutate(DarmanStatus = if_else(cluster_name %in% DarmanSignificantClusters, "SignficantInDarman", "NotSignificantInDarman")) %>%
+  ggplot(aes(x=-log10(p.K700E), y=-log10(p.G742D), color=DarmanStatus)) +
+  geom_point(alpha=0.5) +
+  theme_bw()
+  
+           
+```
+
+Ok, actually this makes sense... especially since we were taking the signficant introns from the "signficant in CLL" column in the Darman excel table... Do they have a significant in MDS column?
+
+

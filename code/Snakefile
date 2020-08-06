@@ -6,9 +6,9 @@ configfile: "config.yaml"
 
 rule all:
     input:
-#        expand("../output/DifferentialSplicing/{AnalysisName}_cluster_significance.txt", AnalysisName=samples.index),
         expand( "clustering/{AnalysisName}/leafcutter_perind_numers.counts.fixed.gz", AnalysisName=samples.index),
         expand("../output/CountTables/{AnalysisName}.numers.gz", AnalysisName=samples.index),
+#        expand("../output/DifferentialSplicing/{AnalysisName}_cluster_significance.txt", AnalysisName=samples.index),
 
 include: "rules/other.smk"
 
@@ -46,27 +46,27 @@ rule make_numers_and_denoms:
         denoms = "../output/CountTables/{AnalysisName}.denoms.gz"
     shell:
         """
-        zcat {input} | perl -lne 'if ($.==1) {{print}} else {{$_ =~ s/\d+\///g; print}}' | gzip - > {output.denoms}
-        zcat {input} | perl -lne 'if ($.==1) {{print}} else {{$_ =~ s/\/\d+//g; print}}' | gzip - > {output.numers}
+        zcat {input} | perl -lne 'if ($.==1) {{print}} else {{$_ =~ s/\d+\///g; print}}' | gzip - > {output.numers}
+        zcat {input} | perl -lne 'if ($.==1) {{print}} else {{$_ =~ s/\/\d+//g; print}}' | gzip - > {output.denoms}
         """
 
-rule leafcutter_ds:
-    input:
-        JuncCountTable = "clustering/{AnalysisName}/leafcutter_perind_numers.counts.fixed.gz",
-        groupfile = lambda wildcards: samples.at[wildcards.AnalysisName, "GroupsFile"]
-    output:
-        "../output/DifferentialSplicing/{AnalysisName}_effect_sizes.txt",
-        "../output/DifferentialSplicing/{AnalysisName}_cluster_significance.txt"
-    threads: 4
-    params:
-        outputprefix = "../output/DifferentialSplicing/{AnalysisName}",
-        extra_params = lambda wildcards: samples.at[wildcards.AnalysisName, "DsExtraParams"] 
-    log:
-        "logs/leafcutter_ds/{AnalysisName}.log"
-    conda:
-        "envs/leafcutter.yml"
-    shell:
-        """
-        conda activate leafcutter
-	leafcutter_ds.R -p {threads} -o {params.outputprefix} {params.extra_params} {input.JuncCountTable} {input.groupfile} &> {log}
-        """
+#rule leafcutter_ds:
+   # input:
+      #  JuncCountTable = "clustering/{AnalysisName}/leafcutter_perind_numers.counts.fixed.gz",
+     #   groupfile = lambda wildcards: samples.at[wildcards.AnalysisName, "GroupsFile"]
+    #output:
+      #  "../output/DifferentialSplicing/{AnalysisName}_effect_sizes.txt",
+     #   "../output/DifferentialSplicing/{AnalysisName}_cluster_significance.txt"
+    #threads: 4
+    #params:
+     #   outputprefix = "../output/DifferentialSplicing/{AnalysisName}",
+      #  extra_params = lambda wildcards: samples.at[wildcards.AnalysisName, "DsExtraParams"] 
+    #log:
+       # "logs/leafcutter_ds/{AnalysisName}.log"
+   # conda:
+    #    "envs/leafcutter.yml"
+#    shell:
+       # """
+        # conda activate leafcutter
+        # leafcutter_ds.R -p {threads} -o {params.outputprefix} {params.extra_params} {input.JuncCountTable} {input.groupfile} &> {log}
+       # """

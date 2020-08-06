@@ -1,0 +1,310 @@
+---
+title: "Creating QQplot to test Darmin"
+author: "Shane Warland"
+date: "8/3/2020"
+output: html_document
+---
+```{r}
+#necessary packages and global code
+`%!in%` = Negate(`%in%`)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+#Initial call of data
+sigg742d <- read.table("../output/DifferentialSplicing/SF3B1G742D_v_WT/SF3B1G742D_v_WTClus/leafcutter_ds_cluster_significance.txt", sep='\t', header=T)
+sigk700e <- read.table("../output/DifferentialSplicing/SF3B1K700E_v_WT/SF3B1K700E_v_WTClus/leafcutter_ds_cluster_significance.txt", sep='\t', header=T)
+effect_sizesg742d <- read.table("../output/DifferentialSplicing/SF3B1G742D_v_WT/SF3B1G742D_v_WTClus/leafcutter_ds_effect_sizes.txt", sep='\t', header=T)
+effect_sizesk700e <- read.table("../output/DifferentialSplicing/SF3B1K700E_v_WT/SF3B1K700E_v_WTClus/leafcutter_ds_effect_sizes.txt", sep='\t', header=T)
+effect_sizesg742d$cluster1 <- gsub("chr.+:clu_", "", effect_sizesg742d$intron)
+effect_sizesk700e$cluster1 <- gsub("chr.+:clu_", "", effect_sizesk700e$intron)
+ 
+head(sigg742d)
+head(sigk700e)
+head(effect_sizesg742d)
+head(effect_sizesk700e)
+
+G742DP <- sigg742d$p
+K700EP <- sigk700e$p
+PvaluesContrast.df <- data.frame(G742DP, K700EP)
+head(PvaluesContrast.df)
+PvalueCleaned <- na.omit(PvaluesContrast.df)
+head(PvalueCleaned)
+plot(-log(PvalueCleaned), col=rgb(red=0.2, green=0.2, blue=1.0, alpha=0.2))
+cor(PvalueCleaned)
+a <- lm(PvalueCleaned)
+smoothScatter(-log(PvalueCleaned), xlim = c(0,10),ylim=c(0,20))
+abline(lm(PvalueCleaned$G742DP ~ PvalueCleaned$K700EP))
+
+```
+```{r}
+#Cleaned code for Ben to look at
+
+
+
+
+
+
+
+
+
+
+
+inner_join(G742DEnriched, K700EEnriched, by="intron",) %>% 
+select(intron, p.x, p.y) %>%
+mutate(InDarman = intron %in% VectorOfDarmanClusters) %>% 
+ggplot(aes(x=p.x, y=p.y, color=InDarman)) +
+geom_point()
+```
+
+
+
+
+
+
+
+```{r}
+#Clean up of data based on p-values 
+SigG742D <- sigg742d %>% filter(p.adjust <0.05)
+SigK700E <- sigk700e %>% filter(p.adjust <0.05)
+nrow(SigG742D)
+```
+
+
+```{r}
+#Call Darman
+
+Darman <- read_excel("Darmanhg38.xls", col_names=T)
+#used mutate to add 1 to both start and stop columns in Darman in order to clean up mapping 
+#Filter based on if CLL sig is true
+Darman1 <- Darman %>% mutate(Start=Start+1,End=End+1) 
+Darman2 <- Darman1 %>% filter(Darman1$`Significant in CLL`=="True")
+#combine Darman first 3 columns so it matches
+Darman.df <- unite(Darman2, Chrom, c("Chromosome","Start"), sep = ":", remove = TRUE, na.rm = FALSE)
+Darmansorted.df <-  unite(Darman.df, Chrom, c("Chrom","End"), sep = ":", remove = TRUE, na.rm = FALSE)
+  #paste(Darman$Chromosome, ":", Darman$Start, ":", Darman$End)
+head(Darmansorted.df)
+
+```
+
+```{r}
+#Lets create cluster1 column in G742DUnique so I can filter
+
+SigG742D$cluster1 <- gsub(".+:clu_", "", SigG742D$cluster) 
+head(SigG742D)
+FilteredG742 <- effect_sizesg742d[effect_sizesg742d$cluster1 %in% SigG742D$cluster1,]
+FilteredG742$intron <- gsub(":clu_.+", "", FilteredG742$intron)
+head(FilteredG742)  
+
+FullFilG742D <- Darmansorted.df[Darmansorted.df$Chrom %in% FilteredG742$intron,]
+head(FullFilG742D)
+nrow(FullFilG742D)
+arrange(FullFilG742D, `FDR q-value`) %>% head(7)
+```
+```{r}
+#Filter and find pvalues from Darman in the leafcutter
+#add another column to G742dUnique to allow for filtering
+#head(SigG742D)
+#head(effect_sizesg742d)
+sigg742d$cluster1 <- gsub(".+:clu_", "", sigg742d$cluster) 
+G742DEnriched <- sigg742d
+G742DEnriched <- merge(G742DEnriched, effect_sizesg742d, by= c("cluster1"))
+head(G742DEnriched)
+#This is where I make a InDaman and NotinDarman
+G742DEnriched$intron <- gsub(":clu_.+", "", G742DEnriched$intron)
+InDarman <- G742DEnriched[G742DEnriched$intron %in% Darmansorted.df$Chrom,]
+head(InDarman)
+NotInDarman <- G742DEnriched[G742DEnriched$intron %!in% Darmansorted.df$Chrom,]
+head(NotInDarman)
+
+#Try for K700E
+sigk700e$cluster1 <- gsub(".+:clu_", "", sigk700e$cluster) 
+K700EEnriched <- sigk700e
+K700EEnriched <- merge(K700EEnriched, effect_sizesk700e, by= c("cluster1"))
+head(K700EEnriched)
+#This is where I make a InDaman and NotinDarman
+K700EEnriched$intron <- gsub(":clu_.+", "", K700EEnriched$intron)
+InDarman2 <- K700EEnriched[K700EEnriched$intron %in% Darmansorted.df$Chrom,] %>% nrow()
+head(InDarman)
+NotInDarman2 <- K700EEnriched[K700EEnriched$intron %!in% Darmansorted.df$Chrom,]
+head(NotInDarman)
+
+
+```
+```{r}
+#Here is where I try to make a QQplot for G742D
+
+BaselineQInD <-percent_rank(InDarman$p)
+head(BaselineQ)
+hist(BaselineQ)
+BaselineQNotD <- percent_rank(NotInDarman$p)
+hist(BaselineQNotD)
+
+#For this you don't want to use the p-values filtered by p<0.05
+plot(-log10(BaselineQInD), -log10(InDarman$p), col=1)
+points(-log10(BaselineQNotD), -log10(NotInDarman$p),col=2)
+abline(coef = c(0,1))
+
+#Make QQplot for K700E
+BaselineQInD2 <-percent_rank(InDarman2$p)
+hist(BaselineQInD2,100)
+BaselineQNotD2 <- percent_rank(NotInDarman2$p)
+hist(BaselineQNotD2)
+
+
+#Ben code
+NewPValues <- c(InDarman2$p, runif(length(InDarman$p)))
+NewBase <- percent_rank(NewPValues)
+hist(NewPValues)
+#This was to make sure my data wasnt messed up
+
+hist(InDarman2$p,20)
+hist(NotInDarman2$p,20)
+
+#For this you don't want to use the p-values filtered by p<0.05
+plot(-log10(BaselineQInD2), -log10(InDarman2$p), col=1)
+points(-log10(BaselineQNotD2), -log10(NotInDarman2$p),col=2)
+abline(coef = c(0,1))
+
+
+
+#Pvalues.df <- data.frame(InDarman$p, NotInDarman$p)
+
+
+
+smoothScatter(-log(PvalueCleaned), xlim = c(0,10),ylim=c(0,20))
+abline(lm(PvalueCleaned$G742DP ~ PvalueCleaned$K700EP))
+
+#Pvalues.df %>% 
+ # gather(key="PValueGroup", value="Observed.P") %>%
+  #group_by(PValueGroup) %>%
+  #mutate(Expected.P=percent_rank(Observed.P)) %>%
+hist(sigg742d$p)
+hist(SigG742D$p)
+#test
+Pvalues.df %>% 
+  gather(key="PValueGroup", value="Observed.P") %>%
+  group_by(PValueGroup) %>%
+  mutate(Expected.P=percent_rank(Observed.P)) %>%
+  
+ggplot(Pvalues.df, aes(x=PvaluesGroup1,y=PvaluesGroup2)) +
+  geom_point() +
+  geom_abline() +
+  theme_bw()
+
+head(iris)
+head(Pvalues.df)
+
+
+```
+```{r}
+#Trying to do smooth scatter plot with mutlple colors per line
+head(sigg742d)
+head(sigk700e)
+SigMut <- data.frame(sigg742d$p, sigk700e$p, sigg742d$cluster, sigk700e$cluster)
+head(SigMut)
+SigMutClean <- na.omit(SigMut)
+head(SigMutClean,100)
+nrow()
+
+
+SigMutClean$cluster1 <- gsub(".+:clu_", "", SigMutClean$sigg742d.cluster) 
+SigMutClean$cluster2 <- gsub(".+:clu_", "", SigMutClean$sigk700e.cluster) 
+head(SigMutClean)
+head(effect_sizesg742d)
+NewData <- merge(SigMutClean, effect_sizesg742d$intron, by.x = SigMutClean$cluster1, by.y = effect_sizesg742d$cluster1)
+NewData <- merge(SigMutClean, effect_sizesk700e, by= c("cluster2"))
+
+head(NewData,100)
+nrow(NewData)
+
+
+head(K700EEnriched)
+head(G742DEnriched)
+K700EFil <- K700EEnriched[K700EEnriched$cluster1 %in% G742DEnriched$cluster1,]
+G742DFil <- G742DEnriched[G742DEnriched$cluster1 %in% K700EEnriched$cluster1,]
+
+
+G742DFil$intron <- gsub(":clu_.+", "", G742DFil$intron)
+InDarmanForPlot <- G742DFil[G742DFil$intron %in% Darmansorted.df$Chrom,]
+head(InDarmanForPlot)
+NotInDarmanForPlot <- G742DFil[G742DFil$intron %!in% Darmansorted.df$Chrom,]
+head(NotInDarmanForPlot)
+
+K700EFil$intron <- gsub(":clu_.+", "", K700EFil$intron)
+InDarmanForPlot2 <- K700EFil[K700EFil$intron %in% Darmansorted.df$Chrom,]
+head(InDarmanForPlot2)
+NotInDarmanForPlot2 <- K700EFil[K700EFil$intron %!in% Darmansorted.df$Chrom,]
+head(NotInDarmanForPlot2)
+PvalueInDarman <- data.frame(InDarmanForPlot,InDarmanForPlot2)
+
+plot(InDarmanForPlot,InDarmanForPlot2)
+
+
+smoothScatter(-log(PvalueCleaned), xlim = c(0,10),ylim=c(0,20))
+abline(lm(PvalueCleaned$G742DP ~ PvalueCleaned$K700EP))
+
+
+
+inner_join(G742D.df, K700E.df, by="cluster_name",) %>%
+select(cluster_name, P.x, P.y) %>%
+mutate(InDarman= cluster_name %in% VectorOfDarmanClusters) %>%
+ggplot(aes(x=P.x, y=P.y, color=InDarma)) +
+geom_point()
+
+
+VectorOfDarmanClusters <- data.frame(Darmansorted.df$Chrom)
+nrow(G742DEnriched)
+nrow(K700EEnriched)
+inner_join(G742DEnriched, K700EEnriched, by="intron",) %>% nrow()
+select(intron, p.x, p.y) %>%
+mutate(InDarman = intron %in% VectorOfDarmanClusters) %>% 
+ggplot(aes(x=p.x, y=p.y, color=InDarman)) +
+geom_point()
+
+
+
+
+plot(sigg742d$p,sigk700e$p)
+nrow(VectorOfDarmanClusters)
+head(VectorOfDarmanClusters,100)
+head(InDarman)
+head(InDarman2)
+
+nrow(VectorOfDarmanClusters)
+head(Darmansorted.df)
+head(K700EEnriched)
+head(G742DEnriched)
+
+```
+```{r}
+#I will make this graph if it kills me
+
+InDarman <- G742DEnriched[G742DEnriched$intron %in% Darmansorted.df$Chrom,]
+InDarman2 <- K700EEnriched[K700EEnriched$intron %in% Darmansorted.df$Chrom,]
+InDarmanG742D <- InDarman$intron
+InDarmanK700E <- InDarman2$intron
+
+
+InDarmanG742DNew <- InDarman[InDarman$intron %in% a,]
+InDarmanK700ENew <- InDarman2[InDarman2$intron %in% a,]
+nrow(InDarmanG742DNew)
+nrow(InDarmanK700ENew)
+
+
+a <- InDarmanG742D[InDarmanG742D %in% InDarmanK700E]
+b <- InDarmanK700E[InDarmanK700E %in% InDarmanG742D]
+head(b)
+head(a,200)
+VectorOfDarmanClusters <- data.frame(Darmansorted.df$Chrom)
+nrow(G742DEnriched)
+nrow(K700EEnriched)
+inner_join(G742DEnriched, K700EEnriched, by="intron",) %>% 
+select(intron, p.x, p.y) %>%
+mutate(InDarman = intron %in% VectorOfDarmanClusters) %>% 
+ggplot(aes(x=p.x, y=p.y, color=InDarman)) +
+geom_point()
+
+```
+

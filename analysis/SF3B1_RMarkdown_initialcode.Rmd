@@ -111,11 +111,18 @@ PCResultsUnfil <- (DarmanFinishedUnfil) %>%
 PCResults.df <- as.data.frame(PCResults$x[,1:7]) %>% rownames_to_column()
 PCResultsUnfil.df <- as.data.frame(PCResultsUnfil$x[,1:7]) %>% rownames_to_column()
 
-head(PCResults.df)
-head(PCResultsUnfil.df)
-
 
 ```
+
+
+```{r}
+#code to explain how much each PC explains
+summary(PCResults)
+names(PCResults)
+var_explained <- PCResults$sdev^2/sum(PCResults$sdev^2)
+var_explained[1:5]
+```
+
 
 I have the PCR results but I want to add data from the group file in order to be able to cluster my PC plot by group
 This code processes it and adds it
@@ -136,6 +143,7 @@ head(groupNoID,20)
 combined.data <- merge(x = PCResults.df, y = groupNoID, by = c("rowname"), all = TRUE)
 UnfilCombined <- merge(x = PCResultsUnfil.df, y = groupNoID, by = c("rowname"), all = TRUE)
 head(combined.data,20)
+summary(combined.data)
 ```
 
 Now visualize the PCA
@@ -143,7 +151,16 @@ Now visualize the PCA
 #PCA graph
 PCResultsNoS2.df <- PCResults.df[-c(5,6,11,12),]
 ggplot(combined.data) +
-  geom_point(aes(x=PC1, y=PC2, color= mutation, shape = disease)) + ggtitle("PCA of Mutants and WTs in different backgrounds")
+  geom_point(aes(x=PC1, y=PC2, color= mutation, shape = disease)) + ggtitle("PCA of Mutants and WTs in different backgrounds") +
+  labs(x=paste0("PC1: ",round(var_explained[1]*100,1),"%"),
+       y=paste0("PC2: ",round(var_explained[2]*100,1),"%")) +
+  theme(legend.position="top")
+
+
+
+
+
+
 ggplot(UnfilCombined) +
   geom_point(aes(x=PC1, y=PC2, color= mutation, shape = disease))
 ```

@@ -1,0 +1,89 @@
+---
+title: "Code For Ben to look at"
+author: "Shane Warland"
+date: "8/5/2020"
+output: html_document
+---
+
+```{r}
+#Initial call of data
+sigg742d <- read.table("../output/DifferentialSplicing/SF3B1G742D_v_WT/SF3B1G742D_v_WTClus/leafcutter_ds_cluster_significance.txt", sep='\t', header=T)
+sigk700e <- read.table("../output/DifferentialSplicing/SF3B1K700E_v_WT/SF3B1K700E_v_WTClus/leafcutter_ds_cluster_significance.txt", sep='\t', header=T)
+effect_sizesg742d <- read.table("../output/DifferentialSplicing/SF3B1G742D_v_WT/SF3B1G742D_v_WTClus/leafcutter_ds_effect_sizes.txt", sep='\t', header=T)
+effect_sizesk700e <- read.table("../output/DifferentialSplicing/SF3B1K700E_v_WT/SF3B1K700E_v_WTClus/leafcutter_ds_effect_sizes.txt", sep='\t', header=T)
+
+```
+
+
+
+```{r}
+#Call Darman
+Darman <- read_excel("Darmanhg38.xls", col_names=T)
+#used mutate to add 1 to both start and stop columns in Darman in order to clean up mapping 
+#Filter based on if CLL sig is true
+Darman1 <- Darman %>% mutate(Start=Start+1,End=End+1) 
+Darman2 <- Darman1 %>% filter(Darman1$`Significant in CLL`=="True")
+#combine Darman first 3 columns so it matches
+Darman.df <- unite(Darman2, Chrom, c("Chromosome","Start"), sep = ":", remove = TRUE, na.rm = FALSE)
+Darmansorted.df <-  unite(Darman.df, Chrom, c("Chrom","End"), sep = ":", remove = TRUE, na.rm = FALSE)
+#I need to unite the chro, start and end columns to put it into the notation to sort by
+```
+
+```{r}
+#This allows me to filter the data later on
+effect_sizesg742d$cluster1 <- gsub("chr.+:clu_", "", effect_sizesg742d$intron)
+effect_sizesk700e$cluster1 <- gsub("chr.+:clu_", "", effect_sizesk700e$intron)
+
+
+#Filter and find pvalues from Darman in the leafcutter
+#add another column to G742dUnique to allow for filtering
+
+sigg742d$cluster1 <- gsub(".+:clu_", "", sigg742d$cluster) 
+G742DEnriched <- sigg742d
+G742DEnriched <- merge(G742DEnriched, effect_sizesg742d, by= c("cluster1"))
+head(G742DEnriched)
+
+
+#Try for K700E
+sigk700e$cluster1 <- gsub(".+:clu_", "", sigk700e$cluster) 
+K700EEnriched <- sigk700e
+K700EEnriched <- merge(K700EEnriched, effect_sizesk700e, by= c("cluster1"))
+head(K700EEnriched)
+```
+
+
+
+
+
+```{r}
+#Atempt to plot
+
+#Create Darman list based on intron locations
+VectorOfDarmanClusters <- data.frame(Darmansorted.df$Chrom)
+
+inner_join(G742DEnriched, K700EEnriched, by="intron",) %>% 
+select(intron, p.x, p.y) %>%
+mutate(InDarman = intron %in% VectorOfDarmanClusters) %>% 
+ggplot(aes(x=p.x, y=p.y, color=InDarman)) +
+geom_point()
+
+
+```
+```{r}
+#sanity check
+InDarman <- G742DEnriched[G742DEnriched$intron %in% Darmansorted.df$Chrom,]
+InDarman2 <- K700EEnriched[K700EEnriched$intron %in% Darmansorted.df$Chrom,]
+head(InDarman)
+a <- InDarman[InDarman$intron %in% InDarman2$intron,]
+head(a,110)
+
+
+
+
+
+
+
+
+```
+
+
